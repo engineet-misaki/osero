@@ -1,7 +1,7 @@
 <template>
   <div class="osero">
     <h1 :class="[turn ? 'yureru-j' : 'none']">
-      <span v-if="turn && CPU">手番：あなたの番です。</span>
+      <span v-if="turn && CPU">持ち駒 黒：あなたの番です。</span>
       <span v-else-if="turn">手番：黒</span>
       <span v-else>手番：白</span>
     </h1>
