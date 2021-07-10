@@ -62,6 +62,7 @@ export default {
 //スタートとジャッジ、リバース（前後の盤面入れたら変わる）
 //盤面を入れて盤面を返す関数
 //2手読みして返す関数
+//有利不利を判定する関数
 
 
 name: "Osero",
@@ -80,27 +81,6 @@ name: "Osero",
     this.module = new helpModule
   },
   watch: {
-    put() {
-      // 次の手版の人がおけるか調べる おけるなら手版入れ替え
-      if (this.continueJudge()) {
-        if (this.CPU && this.turn) this.cpuPut();
-        else if (this.turn) this.turn = !this.turn;
-        //黒が打ち終わったタイミング
-        else this.turn = !this.turn;
-      } else {
-        // 次の次の人が置けるか調べる
-        this.turn = !this.turn;
-        if (this.continueJudge()) {
-          if (this.CPU && this.turn) this.cpuPut();
-          else if (this.turn) this.turn = !this.turn;
-          //黒が打ち終わったタイミング
-          else this.turn = !this.turn;
-        } else {
-          // //console.log("両方置けないとき")
-          this.judge();
-        }
-      }
-    },
   },
   methods: {
     putTest(v,h) {
@@ -250,6 +230,10 @@ name: "Osero",
       }
       return kaihoudo[1];
     },
+    cpuButtle() {
+      this.CPU = !this.CPU
+      this.start()
+    },
     judge() {
       let whiteNum = 0;
       let blackNum = 0;
@@ -289,122 +273,11 @@ name: "Osero",
         }
       }
     },
-    cpuButtle() {
-      this.CPU = !this.CPU
-      this.start()
-    },
     reverse(v, h) {
       this.masu[v][h].value = this.turn;
       const changeV = this.masu[v];
       this.masu.splice(v, 1);
       this.masu.splice(v, 0, changeV);
-    },
-    putPiece(v, h) {
-      let canPutPiece = false; //駒を置くかどうかのフラグ
-      // 駒が置いてない＝＝null
-      if (this.masu[v][h].value === null) {
-        // 指定した場所の周り9マスを調べる
-        for (let i = -1; i < 2; i++) {
-          let roundV = v + i;
-          for (let j = -1; j < 2; j++) {
-            let roundH = h + j;
-
-            // 盤面をはみ出さない＆＆相手の駒がある
-            if (![-1, 8].includes(roundV) && ![-1, 8].includes(roundH)) {
-              if (this.masu[roundV][roundH].value === !this.turn) {
-                // 先にある駒を調べて、フラグを変える
-                canPutPiece =
-                  this.nextMasuSerch(v, h, i, j) || canPutPiece ? true : false;
-              }
-            }
-          }
-        }
-      }
-      if (canPutPiece) {
-        this.reverse(v, h);
-        //console.log(this.masu, v, h);
-        // this.putは、駒を置いたかどうかウォッチするためのフラグ
-        this.put = !this.put;
-        // this.putCount++;
-      }
-    },
-    nextMasuSerch(v, h, vi, hj) {
-      let reverseArr = [];
-      for (let i = 0; ; i++) {
-        // 先にある駒の座標
-        let nextV = (Math.abs(vi) + i) * vi + v;
-        let nextH = (Math.abs(hj) + i) * hj + h;
-
-        // 先にある駒が盤面外||駒が置かれてないとき
-        if ([-1, 8].includes(nextV) || [-1, 8].includes(nextH)) break;
-        if (this.masu[nextV][nextH].value === null) break;
-
-        // 先にある駒が自分の駒の時
-        if (this.masu[nextV][nextH].value === this.turn) {
-          for (let j = 0; j < reverseArr.length; j++) {
-            this.reverse(reverseArr[j].nV, reverseArr[j].nH);
-          }
-          return true;
-        }
-
-        // 先にある駒が相手の駒であるのが続くと配列に追加する
-        reverseArr.push({ nV: nextV, nH: nextH });
-      }
-      return false;
-    },
-    // おけるかどうか調べる関数
-    continueJudge() {
-      let flug = false;
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if (flug || this.putCanSerch(i, j)) flug = true; //おけたらtrue
-        }
-      }
-      return flug;
-    },
-    // おける場所を列挙関数
-    canPutMasu() {
-      let putcanArr = [];
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if (this.putCanSerch(i, j)) {
-            putcanArr.push([i, j]);
-          }
-        }
-      }
-      //console.log(putcanArr);
-      return putcanArr;
-    },
-    putCanSerch(v, h) {
-      if (this.masu[v][h].value === null) {
-        // 指定した場所の周り9マスを調べる
-        for (let i = -1; i < 2; i++) {
-          let roundV = v + i;
-          for (let j = -1; j < 2; j++) {
-            let roundH = h + j;
-
-            // 盤面をはみ出さない＆＆相手の駒がある
-            if (![-1, 8].includes(roundV) && ![-1, 8].includes(roundH)) {
-              if (this.masu[roundV][roundH].value === this.turn) {
-                for (let k = 1; ; k++) {
-                  // 先にある駒の座標
-                  let nextV = (Math.abs(i) + k) * i + v;
-                  let nextH = (Math.abs(j) + k) * j + h;
-
-                  if ([-1, 8].includes(nextV) || [-1, 8].includes(nextH)) break;
-                  if (this.masu[nextV][nextH].value === null) break;
-
-                  if (this.masu[nextV][nextH].value === !this.turn) {
-                    // //console.log(v,h,"testjlkjdsa",nextV,nextH)
-                    return true;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      return false;
     },
   },
 };

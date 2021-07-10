@@ -31,7 +31,6 @@ export default class {
         }
         return nextAction
       }
-
     getReverceMasu(masu,myTurn,v,h){//[[],[],[]]
         let changeMasu = []
         if (masu[v][h].value === null) {
@@ -71,4 +70,32 @@ export default class {
         return changeMasu
           
       }
+
+    dfs(masu,myTurn,put,count){//return [v,h]
+        if(count === 2){
+            const newScore = this.judgeScore(masu,myTurn)
+            if(score < newScore) return newScore
+            else return score
+        }
+        const nextMasu = this.getNextMasu(masu,myTurn)
+        for(let i = 0;i<nextMasu.length;i++){
+            const newbanmen = []
+            count ++
+            this.dfs(newbanmen,!myTurn,count)
+        }
+    }
+
+    CPUput(masu,myTurn){
+        let score = {put: [],score: 0}
+        const nextMasu = this.getNextMasu(masu,myTurn)
+        for(let i = 0;i<nextMasu.length;i++){
+            let newScore = this.dfs(newbanmen,myTurn,nextMasu[i].put)
+            if(score.score < newScore) score = {put: nextMasu[i].put, score: newScore}
+        }
+        return score.put
+    }
+
+    judgeScore(masu,myTurn) {
+        return 3
+    }
 }
