@@ -1,6 +1,6 @@
 <template>
   <div class="osero">
-    <h1 :class="[turn ? 'yureru-j' : 'none']">
+    <h1 :class="[turn ? 'yureru' : 'none']">
       <span v-if="turn && CPU">持ち駒 黒：あなたの番です。</span>
       <span v-else-if="turn">手番：黒</span>
       <span v-else>手番：白</span>
@@ -18,7 +18,7 @@
           v-for="(horizon, Hindex) in vertical"
           :key="Hindex"
           class="green"
-          @click="putPiece(Vindex, Hindex)"
+          @click="putTest(Vindex, Hindex)"
           style="
             flex: 1;
             min-height: 50px;
@@ -29,9 +29,9 @@
           <button
             :class="[
               horizon.value === true
-                ? 'front yureru-j'
+                ? 'front yureru'
                 : horizon.value === false
-                ? 'back yureru-j'
+                ? 'back yureru'
                 : 'green',
             ]"
             style="
@@ -54,22 +54,30 @@
 </template>
 
 <script>
+import helpModule from "./method/module.js"
+
 export default {
-  //開放度理論 炭斗 ぐうきりろん
-  name: "Osero",
+  
+//必要なmethod 
+//スタートとジャッジ、リバース（前後の盤面入れたら変わる）
+//盤面を入れて盤面を返す関数
+//2手読みして返す関数
+
+
+name: "Osero",
   data() {
     return {
       masu: [],
       title: "Osero",
       turn: true,
       put: true,
-      putCount: 4,
       itteme: true,
       CPU: false,
     };
   },
   created() {
     this.start();
+    this.module = new helpModule
   },
   watch: {
     put() {
@@ -95,14 +103,39 @@ export default {
     },
   },
   methods: {
+    putTest(v,h) {
+      const reverceMasu = this.module.getReverceMasu(this.masu,this.turn,v,h)
+      if(reverceMasu.length){
+        for(let i = 0;i<reverceMasu.length;i++){
+          this.reverse(reverceMasu[i][0],reverceMasu[i][1])
+        }
+        // this.CPU = true
+        this.changeTurn()
+      }
+    },
+
+    changeTurn() {
+      // 次の人が置けるか調べる
+      if(this.module.getNextMasu(this.masu, !this.turn).length){
+        if(this.CPU) this.cpuPut()
+        else this.turn = !this.turn;
+      }
+      else {
+        // 次の次の人が置けるか調べる
+        if((this.module.getNextMasu(this.masu, this.turn).length)){
+          if(this.CPU) this.cpuPut()
+        }else {
+          // //console.log("両方置けないとき")
+          this.judge();
+        }
+      }
+    },
+
+
     cpuPut() { // 相手の開放度を観察 ,残りますの少ないほうに置く TODO
       let canPutArr = this.canPutMasu(); //黒が打ち終わったタイミングの状態でおけるマスを探る
-      this.turn = !this.turn;
-      // if(this.putCount<50) {
-      let ArrNum = this.firstStrategy(canPutArr);
-      // else {
-      //   //console.log(this.putCount)
-      // }
+      this.turn = !this.turn
+      let ArrNum = this.firstStrategy(canPutArr)
       
       if(this.itteme){
         this.itteme = false
@@ -117,7 +150,6 @@ export default {
       for (let x = 0; x < canPutArr.length; x++) {
 
           // 隅に置いてしまうことがないようにする
-        // if(this.putCount <=40){
           if(canPutArr[x][0] === 0 && canPutArr[x][1] === 1) continue
           if(canPutArr[x][0] === 0 && canPutArr[x][1] === 6) continue
           if(canPutArr[x][0] === 1 && canPutArr[x][1] === 0) continue
@@ -293,7 +325,7 @@ export default {
         //console.log(this.masu, v, h);
         // this.putは、駒を置いたかどうかウォッチするためのフラグ
         this.put = !this.put;
-        this.putCount++;
+        // this.putCount++;
       }
     },
     nextMasuSerch(v, h, vi, hj) {
@@ -394,10 +426,10 @@ export default {
 .CPUmode {
   background-color: slategray;
 }
-.yureru-j {
-  animation: yureru-j 2s 1;
+.yureru {
+  animation: yureru 2s 1;
 }
-@keyframes yureru-j {
+@keyframes yureru {
   0% {
     transform: translate(0px, 2px);
   }
