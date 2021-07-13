@@ -57,14 +57,6 @@
 import helpModule from "./method/module.js"
 
 export default {
-  
-//必要なmethod 
-//スタートとジャッジ、リバース（前後の盤面入れたら変わる）
-//盤面を入れて盤面を返す関数
-//2手読みして返す関数
-//有利不利を判定する関数
-
-
 name: "Osero",
   data() {
     return {
@@ -139,11 +131,11 @@ name: "Osero",
         }
       }
       if (whiteNum < blackNum) {
-        alert("黒 win");
+        alert("黒 ("+blackNum+"枚) win");
       } else if (whiteNum === blackNum) {
         alert("引き分け～");
       } else if (blackNum < whiteNum) {
-        alert("白 win");
+        alert("白 ("+whiteNum+"枚) win");
       }
     },
     start() {

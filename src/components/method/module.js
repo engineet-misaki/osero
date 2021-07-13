@@ -57,7 +57,6 @@ export default class {
 
     dfs(masu,myTurn,count){//return [v,h]
         if(count === 2){
-            console.log(masu)
             const score = this.judgeScore(masu,myTurn)
             return score
         }
@@ -79,6 +78,13 @@ export default class {
         const nextMasu = this.getNextMasu(masu,myTurn)//CPUが次打てる手を列挙
         let put = nextMasu[0].put
         for(let i = 0;i<nextMasu.length;i++){
+            // 隅に置けるとき置くようにする
+            if((nextMasu[i].put[0] === 0 && nextMasu[i].put[1] === 0 )||
+                (nextMasu[i].put[0] === 7 && nextMasu[i].put[1] === 0 )||
+                (nextMasu[i].put[0] === 0 && nextMasu[i].put[1] === 7 )||
+                (nextMasu[i].put[0] === 7 && nextMasu[i].put[1] === 7 )){
+                    return nextMasu[i].put
+                }
 
             let newbanmen = JSON.stringify(masu)
             newbanmen = JSON.parse(newbanmen)
@@ -86,7 +92,9 @@ export default class {
 
             console.log("-------------",i)
             let newScore = this.dfs(newbanmen,nextTurn,0)
-            if(newScore < score) {
+            console.log(nextMasu[i].put,newScore)
+            if(newScore < score && this.notPutBConer(nextMasu[i].put)) {// 隅手前に置かないようにする
+                console.log(nextMasu[i].put,newScore)
                 score = newScore
                 put = nextMasu[i].put
             }
@@ -101,7 +109,7 @@ export default class {
     }
 
     returnMasu(masu,myTurn) {
-        let retuval= masu
+        let returnMasu= masu
         let score = 100
         const nextTurn = !myTurn
         const nextMasu = this.getNextMasu(masu,myTurn)
@@ -114,10 +122,10 @@ export default class {
             let newScore = this.judgeScore(newbanmen,nextTurn)
             if(newScore<score) {
                 score = newScore
-                retuval = newbanmen
+                returnMasu = newbanmen
             }
         }
-        return retuval
+        return returnMasu
     }
 
     makeNewMasu(masu,turn,reverceMasu) {
@@ -128,5 +136,28 @@ export default class {
             }
         }
         return masu
+    }
+
+    notPutBConer(put){
+        console.log(put)
+        if((put[0] === 0 && put[1] === 1) ||
+            (put[0] === 1 && put[1] === 1) ||
+            (put[0] === 1 && put[1] === 0) ||
+
+            (put[0] === 0 && put[1] === 6) ||
+            (put[0] === 1 && put[1] === 6) ||
+            (put[0] === 1 && put[1] === 7) ||
+
+            (put[0] === 6 && put[1] === 0) ||
+            (put[0] === 6 && put[1] === 1) ||
+            (put[0] === 7 && put[1] === 1) ||
+            
+            (put[0] === 6 && put[1] === 6) ||
+            (put[0] === 6 && put[1] === 7) ||
+            (put[0] === 7 && put[1] === 6) ){
+                console.log(put)
+                return false
+            }
+        return true
     }
 }
