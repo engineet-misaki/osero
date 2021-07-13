@@ -2,24 +2,8 @@ export default class {
     constructor() {
         
       }
-    
-      hoge() {
-        console.log("test");
-      }
 
-      checkDiff(before, after) {
-        let diffArr = []
-        for(let i = 0;i<before.length;i++){
-            for(let j = 0;j<before[i].length;j++){
-                if(before[i][j].value !== after[i][j].value){
-                    diffArr.push([i,j])
-                }
-            }
-        }
-        return diffArr
-      }
-
-    getNextMasu(masu,myTurn){
+    getNextMasu(masu,myTurn){// [{put: [],reverse: [[ひっくり返るとこの座標],[],[]]},,,]
         let nextAction = []
         for(let i = 0;i<masu.length;i++){
             for(let j = 0;j<masu[i].length;j++){
@@ -71,31 +55,78 @@ export default class {
           
       }
 
-    dfs(masu,myTurn,put,count){//return [v,h]
+    dfs(masu,myTurn,count){//return [v,h]
         if(count === 2){
-            const newScore = this.judgeScore(masu,myTurn)
-            if(score < newScore) return newScore
-            else return score
+            console.log(masu)
+            const score = this.judgeScore(masu,myTurn)
+            return score
         }
-        const nextMasu = this.getNextMasu(masu,myTurn)
-        for(let i = 0;i<nextMasu.length;i++){
-            const newbanmen = []
-            count ++
-            this.dfs(newbanmen,!myTurn,count)
-        }
+
+        
+        let newbanmen = JSON.stringify(masu)
+        newbanmen = JSON.parse(newbanmen)
+        newbanmen = this.returnMasu(newbanmen,myTurn) //現状の盤面入れたときに、相手が打った後の盤面を返す
+
+        count ++
+        const nextTurn = !myTurn
+        const score = this.dfs(newbanmen,nextTurn,count)
+        return score
     }
 
     CPUput(masu,myTurn){
-        let score = {put: [],score: 0}
-        const nextMasu = this.getNextMasu(masu,myTurn)
+        let score = 100
+        const nextTurn = !myTurn
+        const nextMasu = this.getNextMasu(masu,myTurn)//CPUが次打てる手を列挙
+        let put = nextMasu[0].put
         for(let i = 0;i<nextMasu.length;i++){
-            let newScore = this.dfs(newbanmen,myTurn,nextMasu[i].put)
-            if(score.score < newScore) score = {put: nextMasu[i].put, score: newScore}
+
+            let newbanmen = JSON.stringify(masu)
+            newbanmen = JSON.parse(newbanmen)
+            newbanmen = this.makeNewMasu(newbanmen,myTurn,nextMasu[i].reverce)//新しい盤面作る
+
+            console.log("-------------",i)
+            let newScore = this.dfs(newbanmen,nextTurn,0)
+            if(newScore < score) {
+                score = newScore
+                put = nextMasu[i].put
+            }
         }
-        return score.put
+        return put
     }
 
     judgeScore(masu,myTurn) {
-        return 3
+        const nextMasu = this.getNextMasu(masu,myTurn)
+        let score = nextMasu.length
+        return score
+    }
+
+    returnMasu(masu,myTurn) {
+        let retuval= masu
+        let score = 100
+        const nextTurn = !myTurn
+        const nextMasu = this.getNextMasu(masu,myTurn)
+        for(let i = 0;i<nextMasu.length;i++){
+
+            let newbanmen = JSON.stringify(masu)
+            newbanmen = JSON.parse(newbanmen)
+            newbanmen = this.makeNewMasu(newbanmen,myTurn,nextMasu[i].reverce)//新しい盤面作る
+
+            let newScore = this.judgeScore(newbanmen,nextTurn)
+            if(newScore<score) {
+                score = newScore
+                retuval = newbanmen
+            }
+        }
+        return retuval
+    }
+
+    makeNewMasu(masu,turn,reverceMasu) {
+        //masuの座標の値をmyTurn に帰る
+        if(reverceMasu.length){
+            for(let i = 0;i<reverceMasu.length;i++){
+              masu[reverceMasu[i][0]][reverceMasu[i][1]] = {value: turn}
+            }
+        }
+        return masu
     }
 }

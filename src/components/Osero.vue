@@ -1,7 +1,7 @@
 <template>
   <div class="osero">
     <h1 :class="[turn ? 'yureru' : 'none']">
-      <span v-if="turn && CPU">持ち駒 黒：あなたの番です。</span>
+      <span v-if="turn && CPUMode">持ち駒 黒：あなたの番です。</span>
       <span v-else-if="turn">手番：黒</span>
       <span v-else>手番：白</span>
     </h1>
@@ -18,7 +18,7 @@
           v-for="(horizon, Hindex) in vertical"
           :key="Hindex"
           class="green"
-          @click="putTest(Vindex, Hindex)"
+          @click="putPiese(Vindex, Hindex,false)"
           style="
             flex: 1;
             min-height: 50px;
@@ -48,7 +48,7 @@
     <div style="margin: 50px">
       <button @click="start" style="margin: 10px; padding: 10px;">リスタート</button>
       <button @click="judge" style="margin: 10px; padding: 10px;">判定</button>
-      <button @click="cpuButtle" :class="[CPU === true ? 'CPUmode' : '']" style="margin: 10px; padding: 10px;">CPU対戦</button>
+      <button @click="cpuButtle" :class="[CPUMode === true ? 'CPUmode' : '']" style="margin: 10px; padding: 10px;">CPU対戦</button>
     </div>
   </div>
 </template>
@@ -73,7 +73,7 @@ name: "Osero",
       turn: true,
       put: true,
       itteme: true,
-      CPU: false,
+      CPUMode: false,
     };
   },
   created() {
@@ -83,27 +83,38 @@ name: "Osero",
   watch: {
   },
   methods: {
-    putTest(v,h) {
+    putPiese(v,h,cpu) {
       const reverceMasu = this.module.getReverceMasu(this.masu,this.turn,v,h)
+      console.log(v,h,this.turn)
       if(reverceMasu.length){
         for(let i = 0;i<reverceMasu.length;i++){
           this.reverse(reverceMasu[i][0],reverceMasu[i][1])
         }
-        // this.CPU = true
-        this.changeTurn()
+        this.changeTurn(cpu)
       }
     },
 
-    changeTurn() {
+    changeTurn(cpu) {
       // 次の人が置けるか調べる
       if(this.module.getNextMasu(this.masu, !this.turn).length){
-        if(this.CPU) this.cpuPut()
+        if(this.CPUMode && !cpu){//人が打った時、はいる
+          this.turn = !this.turn
+          let cloneMasu = JSON.stringify(this.masu)
+          cloneMasu = JSON.parse(cloneMasu)
+          const putCPU = this.module.CPUput(cloneMasu,this.turn)
+          console.log(putCPU)
+          this.putPiese(putCPU[0],putCPU[1],true)
+        } 
         else this.turn = !this.turn;
       }
       else {
         // 次の次の人が置けるか調べる
         if((this.module.getNextMasu(this.masu, this.turn).length)){
-          if(this.CPU) this.cpuPut()
+          if(this.CPUMode && cpu){//人が打った時、はいらない
+          let cloneMasu = this.masu.slice()
+          const putCPU = this.module.CPUput(cloneMasu,this.turn)
+          this.putPiese(putCPU[0],putCPU[1],true)
+        } 
         }else {
           // //console.log("両方置けないとき")
           this.judge();
@@ -111,127 +122,8 @@ name: "Osero",
       }
     },
 
-
-    cpuPut() { // 相手の開放度を観察 ,残りますの少ないほうに置く TODO
-      let canPutArr = this.canPutMasu(); //黒が打ち終わったタイミングの状態でおけるマスを探る
-      this.turn = !this.turn
-      let ArrNum = this.firstStrategy(canPutArr)
-      
-      if(this.itteme){
-        this.itteme = false
-        ArrNum = this.masu[4][5].value !== null ? 1 : 0
-      }
-
-      this.putPiece(canPutArr[ArrNum][0], canPutArr[ArrNum][1]); //打つ
-
-    },
-    firstStrategy(canPutArr) {
-      let kaihoudo = [64,0];
-      for (let x = 0; x < canPutArr.length; x++) {
-
-          // 隅に置いてしまうことがないようにする
-          if(canPutArr[x][0] === 0 && canPutArr[x][1] === 1) continue
-          if(canPutArr[x][0] === 0 && canPutArr[x][1] === 6) continue
-          if(canPutArr[x][0] === 1 && canPutArr[x][1] === 0) continue
-          if(canPutArr[x][0] === 1 && canPutArr[x][1] === 1) continue
-          if(canPutArr[x][0] === 1 && canPutArr[x][1] === 6) continue
-          if(canPutArr[x][0] === 1 && canPutArr[x][1] === 7) continue
-          if(canPutArr[x][0] === 6 && canPutArr[x][1] === 0) continue
-          if(canPutArr[x][0] === 6 && canPutArr[x][1] === 1) continue
-          if(canPutArr[x][0] === 6 && canPutArr[x][1] === 6) continue
-          if(canPutArr[x][0] === 6 && canPutArr[x][1] === 7) continue
-          if(canPutArr[x][0] === 7 && canPutArr[x][1] === 1) continue
-          if(canPutArr[x][0] === 7 && canPutArr[x][1] === 6) continue
-        // }
-
-        // 角における時は置く
-        if(canPutArr[x][0] === 0 && canPutArr[x][1] === 0) return x
-        if(canPutArr[x][0] === 0 && canPutArr[x][1] === 7) return x
-        if(canPutArr[x][0] === 7 && canPutArr[x][1] === 0) return x
-        if(canPutArr[x][0] === 7 && canPutArr[x][1] === 7) return x
-
-        //置いたときにひっくり返す駒の座標をとって、その周り９マスのnullの座標を数エル
-        let reversePieceArr = [];
-        let v = canPutArr[x][0];
-        let h = canPutArr[x][1];
-        // ------------------------------------------------
-        // 指定した場所の周り9マスを調べる
-        for (let i = -1; i < 2; i++) {
-          let roundV = v + i;
-          for (let j = -1; j < 2; j++) {
-            let roundH = h + j;
-
-            // 盤面をはみ出さない＆＆相手の駒がある
-            if (![-1, 8].includes(roundV) && ![-1, 8].includes(roundH)) {
-              if (this.masu[roundV][roundH].value === !this.turn) {
-                let reversePieceArrTmp = [];
-                for (let k = 0; ; k++) {
-                  // 先にある駒の座標
-                  let nextV = (Math.abs(i) + k) * i + v;
-                  let nextH = (Math.abs(j) + k) * j + h;
-                  reversePieceArrTmp.push([nextV, nextH]);
-
-                  if ([-1, 8].includes(nextV) || [-1, 8].includes(nextH)) break;
-                  if (this.masu[nextV][nextH].value === null) break;
-
-                  if (this.masu[nextV][nextH].value === this.turn) {
-                    reversePieceArrTmp.pop();
-                    reversePieceArr =
-                      reversePieceArr.concat(reversePieceArrTmp);
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // ------------------------------------------------
-        console.log(reversePieceArr);
-
-        let kaihoudoArr = []
-        for (let k = 0; k < reversePieceArr.length; k++) {
-          let v = reversePieceArr[k][0];
-          let h = reversePieceArr[k][1];
-          // ------------------------------------------------
-          // 指定した場所の周り9マスを調べる
-          for (let i = -1; i < 2; i++) {
-            let roundV = v + i;
-            for (let j = -1; j < 2; j++) {
-              let roundH = h + j;
-              if (![-1, 8].includes(roundV) && ![-1, 8].includes(roundH)) {
-                if (this.masu[roundV][roundH].value === null) {
-
-                  let flug = true
-                  for(let y = 0;y<kaihoudoArr.length;y++){
-                    if(kaihoudoArr[y][0] === roundV && kaihoudoArr[y][1] === roundH){
-                      flug = false
-                      break
-                    }
-                  }
-                  if(flug){
-                    kaihoudoArr.push([roundV,roundH])
-                  }
-                }
-              }
-            }
-          }
-
-          let kaihoudoCount = kaihoudoArr.length
-          console.log("----------",kaihoudoCount)
-
-          if (kaihoudoCount < kaihoudo[0]) {
-            kaihoudo[0] = kaihoudoCount
-            kaihoudo[1] = x
-            console.log(kaihoudo[1])
-          }
-        }
-
-      }
-      return kaihoudo[1];
-    },
     cpuButtle() {
-      this.CPU = !this.CPU
+      this.CPUMode = !this.CPUMode
       this.start()
     },
     judge() {
