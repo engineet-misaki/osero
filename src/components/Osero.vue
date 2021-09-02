@@ -117,6 +117,11 @@ name: "Osero",
     cpuButtle() {
       this.CPUMode = !this.CPUMode
       this.start()
+      let startTrun = Math.floor(Math.random()*2)
+      if(this.CPUMode && startTrun) {
+        this.masu[3][4].value = false
+        this.masu[2][4].value = false
+      }
     },
     judge() {
       let whiteNum = 0;
